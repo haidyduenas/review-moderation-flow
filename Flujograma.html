@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Flujo de moderación de reviews</title>
+  <style>
+    :root {
+      --approve-bg: #e3fcef;
+      --approve-border: #2e7d32;
+      --reject-bg: #ffebee;
+      --reject-border: #c62828;
+      --derive-bg: #fff8e1;
+      --derive-border: #ff8f00;
+      --page-bg: #f5f7fb;
+      --card-bg: #ffffff;
+      --accent: #1a73e8;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+        sans-serif;
+      background: var(--page-bg);
+      color: #263238;
+    }
+
+    .page {
+      max-width: 1200px;
+      margin: 32px auto;
+      padding: 0 16px 48px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+
+    header h1 {
+      margin: 0 0 8px;
+      font-size: 28px;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+
+    header p {
+      margin: 0;
+      font-size: 15px;
+      color: #546e7a;
+    }
+
+    .diagram-card {
+      background: var(--card-bg);
+      border-radius: 16px;
+      padding: 24px 24px 32px;
+      box-shadow: 0 18px 45px rgba(15, 23, 42, 0.12);
+      border: 1px solid rgba(148, 163, 184, 0.4);
+    }
+
+    .diagram-card h2 {
+      margin: 0 0 4px;
+      font-size: 20px;
+      color: #111827;
+    }
+
+    .diagram-card p {
+      margin: 0 0 12px;
+      font-size: 14px;
+      color: #6b7280;
+    }
+
+    .diagram-wrapper {
+      margin-top: 12px;
+      padding-top: 8px;
+      border-top: 1px dashed #e5e7eb;
+      overflow-x: auto;
+    }
+
+    .mermaid {
+      min-width: 820px; /* para que el diagrama tenga espacio */
+    }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 20px;
+      font-size: 13px;
+      color: #4b5563;
+    }
+
+    .legend-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.9);
+      border: 1px solid #e5e7eb;
+    }
+
+    .legend-dot {
+      width: 14px;
+      height: 14px;
+      border-radius: 999px;
+    }
+
+    .legend-dot.approve {
+      background: var(--approve-bg);
+      border: 1px solid var(--approve-border);
+    }
+
+    .legend-dot.reject {
+      background: var(--reject-bg);
+      border: 1px solid var(--reject-border);
+    }
+
+    .legend-dot.derive {
+      background: var(--derive-bg);
+      border: 1px solid var(--derive-border);
+    }
+
+    .legend-dot.decision {
+      background: #e3f2fd;
+      border: 1px solid #1565c0;
+    }
+
+    .legend-dot.process {
+      background: #ffffff;
+      border: 1px solid #90a4ae;
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header>
+      <h1>DIAGRAMA DE FLUJO</h1>
+      <p>Moderación de reviews para los 17 sitios web</p>
+    </header>
+
+    <section class="diagram-card">
+      <h2>Cascada de decisiones – Versión 0.1</h2>
+      <p>
+        Flujo simplificado que siguen los comentarios desde que entran al
+        sistema hasta su estado final: publicar, no publicar o derivar.
+        Este boceto sirve como base para IT, Growth y Atención al Cliente.
+      </p>
+
+      <div class="diagram-wrapper">
+        <div class="mermaid">
+flowchart TD
+  %% ---------- DEFINICIÓN DE ESTILOS ----------
+  classDef approve fill:#E3FCEF,stroke:#2E7D32,color:#1B5E20,font-weight:bold;
+  classDef reject fill:#FFEBEE,stroke:#C62828,color:#B71C1C,font-weight:bold;
+  classDef derive fill:#FFF8E1,stroke:#FF8F00,color:#EF6C00,font-weight:bold;
+  classDef decision fill:#E3F2FD,stroke:#1565C0,color:#0D47A1,font-weight:bold;
+  classDef process fill:#FFFFFF,stroke:#90A4AE,color:#263238;
+
+  %% ---------- FLUJO PRINCIPAL ----------
+  A(["Nuevo comentario<br/>recibido"]):::process --> B{"¿Tiene texto<br/>además del rating?"}:::decision
+
+  %% SIN TEXTO: SOLO RATING
+  B -- "No" --> C["Publicar solo rating<br/>(1 a 5 estrellas)"]:::approve
+  C --> F1[("FIN – Rating publicado")]:::approve
+
+  %% CON TEXTO: CONTENIDO PROHIBIDO
+  B -- "Sí" --> D{"¿Hay insultos,<br/>discriminación, spam<br/>o datos sensibles?"}:::decision
+  D -- "Sí" --> E["Marcar como contenido<br/>ofensivo / spam"]:::reject
+  E --> F2[("FIN – NO PUBLICAR<br/>Ofensivo / spam")]:::reject
+
+  %% TIENDA FÍSICA
+  D -- "No" --> G{"¿Habla de tienda física<br/>o atención en sucursal?"}:::decision
+  G -- "Sí" --> H["Derivar a área de<br/>Experiencia en Tienda"]:::derive
+  H --> F3[("FIN – NO PUBLICAR<br/>Tienda física (derivado)")]:::derive
+
+  %% ECOMMERCE / ENVÍO
+  G -- "No" --> I{"¿Habla de envío o<br/>compra online (ecommerce)?"}:::decision
+  I -- "Sí" --> J{"¿Aporta información<br/>útil para otros clientes?"}:::decision
+  J -- "Sí" --> K["Aprobar review de<br/>experiencia ecommerce"]:::approve
+  K --> F4[("FIN – PUBLICAR<br/>Experiencia ecommerce")]:::approve
+  J -- "No" --> L["NO PUBLICAR –<br/>comentario poco claro<br/>o sin valor"]:::reject
+  L --> F5[("FIN – NO PUBLICAR<br/>Sin valor")]:::reject
+
+  %% PRODUCTO
+  I -- "No" --> M{"¿Habla del producto<br/>(uso, calidad, funciones)?"}:::decision
+  M -- "Sí" --> N{"¿Aporta información<br/>útil y respetuosa?"}:::decision
+  N -- "Sí" --> O["Aprobar review<br/>de producto"]:::approve
+  O --> F6[("FIN – PUBLICAR<br/>Review de producto")]:::approve
+  N -- "No" --> P["Evaluar según política:<br/>si es muy vago<br/>NO PUBLICAR"]:::reject
+  P --> F7[("FIN – NO PUBLICAR<br/>Sin valor")]:::reject
+
+  %% SIN CATEGORÍA CLARA
+  M -- "No" --> Q{"¿Es texto sin sentido<br/>o fuera de contexto?"}:::decision
+  Q -- "Sí" --> R["NO PUBLICAR –<br/>fuera de contexto"]:::reject
+  R --> F8[("FIN – NO PUBLICAR<br/>Fuera de contexto")]:::reject
+  Q -- "No" --> S["NO PUBLICAR –<br/>categoría «otro»<br/>(revisar en comité)"]:::reject
+  S --> F9[("FIN – NO PUBLICAR<br/>Otro")]:::reject
+        </div>
+      </div>
+
+      <div class="legend">
+        <div class="legend-item">
+          <span class="legend-dot process"></span>
+          <span>Inicio / proceso intermedio</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-dot decision"></span>
+          <span>Pregunta de decisión (Sí / No)</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-dot approve"></span>
+          <span>Resultado: Publicar</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-dot derive"></span>
+          <span>Resultado: No publicar y derivar</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-dot reject"></span>
+          <span>Resultado: No publicar</span>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- JS: Mermaid para renderizar el diagrama -->
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <script>
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: "neutral",
+      securityLevel: "loose",
+      flowchart: {
+        curve: "basis"
+      }
+    });
+  </script>
+</body>
+</html>
