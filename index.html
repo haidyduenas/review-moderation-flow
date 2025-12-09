@@ -161,24 +161,38 @@ flowchart TD
   classDef decision fill:#E3F2FD,stroke:#1565C0,color:#0D47A1,font-weight:bold;
   classDef process fill:#FFFFFF,stroke:#90A4AE,color:#263238;
 
-  %% ---------- FLUJO PRINCIPAL ----------
-  A(["Nuevo comentario<br/>recibido"]):::process --> B{"¿Tiene texto<br/>además del rating?"}:::decision
+  %% ---------- INGESTA + IA ----------
+  U["Upload Excel / CSV<br/>with reviews"]:::process --> 
+  V["For each row:<br/>review text + product/service"]:::process --> 
+  W["AI review classifier<br/>(legibility, clarity, tone,<br/>spam, usefulness)"]:::process --> 
+  X{"AI classification"}:::decision
 
-  %% SIN TEXTO: SOLO RATING
+  X -- "Approve" --> X1["Label as APPROVE<br/>+ short explanation"]:::approve
+  X1 --> X2["Auto-publish review<br/>to site"]:::approve
+  X2 --> XF[("END – Auto-approved<br/>by AI")]:::approve
+
+  X -- "Deny" --> Y1["Label as DENY<br/>+ short explanation"]:::reject
+  Y1 --> Y2["Auto-reject review<br/>(not published)"]:::reject
+  Y2 --> YF[("END – Auto-denied<br/>by AI")]:::reject
+
+  X -- "Human review<br/>required" --> Z1["Label as HUMAN REVIEW<br/>+ trigger factor<br/>(ALL CAPS, unclear text,<br/>sarcasm, etc.)"]:::derive
+  Z1 --> Z2["Send to manual<br/>moderation queue"]:::derive
+  Z2 --> A(["New comment<br/>received for manual review"]):::process
+
+  %% ---------- CASCADA MANUAL EXISTENTE ----------
+  A --> B{"¿Tiene texto<br/>además del rating?"}:::decision
+
   B -- "No" --> C["Publicar solo rating<br/>(1 a 5 estrellas)"]:::approve
   C --> F1[("FIN – Rating publicado")]:::approve
 
-  %% CON TEXTO: CONTENIDO PROHIBIDO
   B -- "Sí" --> D{"¿Hay insultos,<br/>discriminación, spam<br/>o datos sensibles?"}:::decision
   D -- "Sí" --> E["Marcar como contenido<br/>ofensivo / spam"]:::reject
   E --> F2[("FIN – NO PUBLICAR<br/>Ofensivo / spam")]:::reject
 
-  %% TIENDA FÍSICA
   D -- "No" --> G{"¿Habla de tienda física<br/>o atención en sucursal?"}:::decision
   G -- "Sí" --> H["Derivar a área de<br/>Experiencia en Tienda"]:::derive
   H --> F3[("FIN – NO PUBLICAR<br/>Tienda física (derivado)")]:::derive
 
-  %% ECOMMERCE / ENVÍO
   G -- "No" --> I{"¿Habla de envío o<br/>compra online (ecommerce)?"}:::decision
   I -- "Sí" --> J{"¿Aporta información<br/>útil para otros clientes?"}:::decision
   J -- "Sí" --> K["Aprobar review de<br/>experiencia ecommerce"]:::approve
@@ -186,7 +200,6 @@ flowchart TD
   J -- "No" --> L["NO PUBLICAR –<br/>comentario poco claro<br/>o sin valor"]:::reject
   L --> F5[("FIN – NO PUBLICAR<br/>Sin valor")]:::reject
 
-  %% PRODUCTO
   I -- "No" --> M{"¿Habla del producto<br/>(uso, calidad, funciones)?"}:::decision
   M -- "Sí" --> N{"¿Aporta información<br/>útil y respetuosa?"}:::decision
   N -- "Sí" --> O["Aprobar review<br/>de producto"]:::approve
@@ -194,12 +207,12 @@ flowchart TD
   N -- "No" --> P["Evaluar según política:<br/>si es muy vago<br/>NO PUBLICAR"]:::reject
   P --> F7[("FIN – NO PUBLICAR<br/>Sin valor")]:::reject
 
-  %% SIN CATEGORÍA CLARA
   M -- "No" --> Q{"¿Es texto sin sentido<br/>o fuera de contexto?"}:::decision
   Q -- "Sí" --> R["NO PUBLICAR –<br/>fuera de contexto"]:::reject
   R --> F8[("FIN – NO PUBLICAR<br/>Fuera de contexto")]:::reject
   Q -- "No" --> S["NO PUBLICAR –<br/>categoría «otro»<br/>(revisar en comité)"]:::reject
   S --> F9[("FIN – NO PUBLICAR<br/>Otro")]:::reject
+
         </div>
       </div>
 
@@ -242,4 +255,5 @@ flowchart TD
   </script>
 </body>
 </html>
+
 
