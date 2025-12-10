@@ -153,6 +153,7 @@
 
       <div class="diagram-wrapper">
         <div class="mermaid">
+          
 flowchart TD
   %% ---------- DEFINICIÓN DE ESTILOS ----------
   classDef approve fill:#E3FCEF,stroke:#2E7D32,color:#1B5E20,font-weight:bold;
@@ -164,20 +165,26 @@ flowchart TD
   %% ---------- INGESTA + IA ----------
   U["Cargar archivo Excel / CSV<br/>con reseñas"]:::process --> 
   V["Por cada fila:<br/>texto de reseña + producto/servicio"]:::process --> 
-  W["Clasificador IA de reseñas<br/>(legibilidad, claridad, tono,<br/>spam, utilidad)"]:::process --> 
-  X{"Clasificación IA"}:::decision
+  W["Analizar reseña con IA<br/>(legibilidad, claridad, tono,<br/>spam, utilidad)"]:::process --> 
+  IA1{"¿Infringe políticas<br/>claras de publicación?"}:::decision
 
-  X -- "Aprobar" --> X1["Marcar como APROBAR<br/>+ breve explicación"]:::approve
-  X1 --> X2["Publicar automáticamente<br/>la reseña en el sitio"]:::approve
-  X2 --> XF[("FIN – Aprobada<br/>automáticamente por IA")]:::approve
+  %% DENEGAR
+  IA1 -- "Sí<br/>(insultos, spam,<br/>promoción externa, etc.)" --> DEN1["Marcar como DENEGAR<br/>+ breve explicación"]:::reject
+  DEN1 --> DEN2["Rechazo automático<br/>(no se publica)"]:::reject
+  DEN2 --> DENF[("FIN – Denegada<br/>automáticamente por IA")]:::reject
 
-  X -- "Denegar" --> Y1["Marcar como DENEGAR<br/>+ breve explicación"]:::reject
-  Y1 --> Y2["Rechazo automático<br/>(no se publica)"]:::reject
-  Y2 --> YF[("FIN – Denegada<br/>automáticamente por IA")]:::reject
+  %% NO INFRINGE → EVALUAR CALIDAD
+  IA1 -- "No" --> IA2{"¿Cumple lineamientos<br/>de calidad y legibilidad?"}:::decision
 
-  X -- "Revisión humana<br/>requerida" --> Z1["Marcar como REVISIÓN HUMANA<br/>+ factor detonante<br/>(MAYÚSCULAS, confuso,<br/>sarcasmo, etc.)"]:::derive
-  Z1 --> Z2["Enviar a cola de<br/>moderación manual"]:::derive
-  Z2 --> A(["Nuevo comentario<br/>recibido para revisión manual"]):::process
+  %% APROBAR
+  IA2 -- "Sí<br/>(texto claro, útil,<br/>tono adecuado)" --> APR1["Marcar como APROBAR<br/>+ breve explicación"]:::approve
+  APR1 --> APR2["Publicación automática<br/>en el sitio"]:::approve
+  APR2 --> APRF[("FIN – Aprobada<br/>automáticamente por IA")]:::approve
+
+  %% REVISIÓN HUMANA
+  IA2 -- "No / dudoso<br/>(MAYÚSCULAS, confusa,<br/>sarcasmo, exceso de !) " --> HUM1["Marcar como REVISIÓN HUMANA<br/>+ factor detonante"]:::derive
+  HUM1 --> HUM2["Enviar a cola de<br/>moderación manual"]:::derive
+  HUM2 --> A["Nuevo comentario<br/>para revisión manual"]:::process
 
   %% ---------- CASCADA MANUAL ----------
   A --> B{"¿Tiene texto<br/>además del rating?"}:::decision
@@ -212,7 +219,6 @@ flowchart TD
   R --> F8[("FIN – NO PUBLICAR<br/>Fuera de contexto")]:::reject
   Q -- "No" --> S["NO PUBLICAR –<br/>categoría «otro»<br/>(revisar en comité)"]:::reject
   S --> F9[("FIN – NO PUBLICAR<br/>Otro")]:::reject
-
 
         </div>
       </div>
@@ -256,6 +262,7 @@ flowchart TD
   </script>
 </body>
 </html>
+
 
 
 
